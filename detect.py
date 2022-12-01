@@ -48,7 +48,7 @@ from utils.general import (LOGGER, Profile, check_file, check_img_size, check_im
 from utils.plots import Annotator, colors, save_one_box
 from utils.torch_utils import select_device, smart_inference_mode
 import numpy as np
-from mavlink import send_land_message
+#from mavlink import send_land_message
 
 @smart_inference_mode()
 def run(
@@ -224,7 +224,7 @@ def run(
                         print("center_x = ", x_3d, "center_y = ", y_3d)
 
                         # 데이터 전송
-                        goto_position_target_local_ned(x_3d, y_3d)
+                        #goto_position_target_local_ned(x_3d, y_3d)
                     
                     """
                     if save_txt:  # Write to file
