@@ -96,7 +96,7 @@ class Annotator:
                     fill=color,
                 )
                 # self.draw.text((box[0], box[1]), label, fill=txt_color, font=self.font, anchor='ls')  # for PIL>8.0
-                self.draw.text((box[0], box[1] - h if outside else box[1]), label, fill=txt_color, font=self.font)
+                #self.draw.text((box[0], box[1] - h if outside else box[1]), label, fill=txt_color, font=self.font)
         else:  # cv2
             p1, p2 = (int(box[0]), int(box[1])), (int(box[2]), int(box[3]))
             cv2.rectangle(self.im, p1, p2, color, thickness=self.lw, lineType=cv2.LINE_AA)
@@ -106,13 +106,14 @@ class Annotator:
                 outside = p1[1] - h >= 3
                 p2 = p1[0] + w, p1[1] - h - 3 if outside else p1[1] + h + 3
                 cv2.rectangle(self.im, p1, p2, color, -1, cv2.LINE_AA)  # filled
-                cv2.putText(self.im,
+                # 객체 라벨 프린트
+                """cv2.putText(self.im,
                             label, (p1[0], p1[1] - 2 if outside else p1[1] + h + 2),
                             0,
                             self.lw / 3,
                             txt_color,
                             thickness=tf,
-                            lineType=cv2.LINE_AA)
+                            lineType=cv2.LINE_AA)"""
 
     def masks(self, masks, colors, im_gpu=None, alpha=0.5):
         """Plot masks at once.
@@ -201,34 +202,28 @@ class Annotator:
             for i in circles[0]:
                 if(len(leds)==2):
                     break
+                # 원이 존재한다면 화면에 출력하도록 설정(일단 제거)
                 if(self.isCircleCenterInBox(i, box[0], box[1] ,box[2]-box[0], box[3]-box[1])):
                 #if(sub(i[0], i[1]) > 200): # 해당 원의 중심이 픽셀값 200 보다 크다면 ( led 의 원을 추출했다면 )
                     leds.append(i)
-                    #print("leds[0] = ", i[0], i[1])
-                    #west_north = (i[0]-i[2], i[1]-i[2])
-                    #east_south = (i[0]+i[2], i[1]+i[2])
-                    #self.draw.arc((box[0], box[1], box[2], box[3]), start=0, end=360, width=self.lw, fill=(0, 255, 0))
-                    #self.draw.elipse([west_north, east_south], outline=(0, 0, 255))
-                    cv2.circle(self.im, (i[0], i[1]), i[2], (0, 255, 0), 2)
+                    #cv2.circle(self.im, (i[0], i[1]), i[2], (0, 255, 0), 2)
 
-            if(len(leds)==2): # LED 가 추적이 되는 경우에는 원들의 중간 지점을 리턴
+            # LED 가 추적이 되는 경우에는 원들의 중간 지점을 리턴
+            if(len(leds)==2): 
                 circle_one = leds[0]
                 circle_two = leds[1]
 
-                center_x = (circle_one[0] + circle_two[1]) / 2
-                center_y = (circle_one[1] + circle_two[1]) / 2
-                
-        else:# 추적이 되지 않는 경우에는 박스의 중간 지점을 리턴
-            #w = (box[2] - box[0])
-            #h = (box[3] - box[1])
-            center_x = ( box[0] + box[2] ) / 2
-            center_y = ( box[1] + box[3] ) / 2
+                center_x = (float)((circle_one[0] + circle_two[0]) / 2.0)
+                center_y = (float)((circle_one[1] + circle_two[1]) / 2.0)            
+            
+        # 원이 추출되었지만 객체 안에 존재하는 원이 2개가 아닐경우 ( LED 추적이 제대로 이루어지지 않았을 경우 )
+        # 추적이 되지 않는 경우에는 박스의 중간 지점을 리턴   
+        if(len(center)!=2):
+            center_x = (float)(( box[0] + box[2] ) / 2.0)
+            center_y = (float)(( box[1] + box[3] ) / 2.0)
 
-        #center_x = (float)(center_x)
-        #center_y = (float)(center_y)
-
-        center.append(center_x)
-        center.append(center_y)
+            center.append(center_x)
+            center.append(center_y)
 
         return center
 

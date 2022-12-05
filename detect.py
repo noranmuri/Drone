@@ -121,6 +121,7 @@ def run(
     vid_path, vid_writer = [None] * bs, [None] * bs
 
     # Run inference
+    count = 0
     model.warmup(imgsz=(1 if pt or model.triton else bs, 3, *imgsz))  # warmup
     seen, windows, dt = 0, [], (Profile(), Profile(), Profile())
     for path, im, im0s, vid_cap, s in dataset:
@@ -157,7 +158,16 @@ def run(
                 #s += f'{i}: '
             else:
                 p, im0, frame = path, im0s.copy(), getattr(dataset, 'frame', 0)
+                dst = cv2.undistort(im0, caliCam.mtx, caliCam.dist, None, caliCam.opt_mtx)
                 #_, im1 = sub.read()
+
+            # 프레임의 width, height
+            # 에 대하여 한 번만 출력
+            frame_h, frame_w, _ = im0.shape
+            if(count==0):
+                print("width = ", frame_w, " height = ", frame_h)
+            if(count==0):
+                count=count+1
 
             p = Path(p)  # to Path
             save_path = str(save_dir / p.name)  # im.jpg
@@ -185,17 +195,25 @@ def run(
                             annotator.box_label(xyxy, label, color=colors(c, True))
                             # print(xyxy[0], xyxy[1], xyxy[2], xyxy[3])
 
-                        # center = annotator.box_label(xyxy, label, color = colors(c,True))
-                            center=[]
-                            center.append((float)(xyxy[0]+xyxy[2])/2.0) 
-                            center.append(((float)(xyxy[1]+xyxy[3])/2.0))
+                         # 외각에 존재할 수 있는 liar 제가
+                        if(xyxy[0] < 0.1*frame_w or xyxy[2] > 0.9*frame_w):
+                            continue
+                        if(xyxy[1] < 0.1*frame_h or xyxy[3] > 0.9*frame_h):
+                            continue
+                        
+                        # 객체의 중심점 추출 ( 혹은 LED 의 중심 <- 현재 주석 처리 )
+                        center = annotator.circle(xyxy, im0)
+                        
+                        # 객체의 중심점으로만 할 경우 아래의 3줄 코드 사용
+                        #center=[]
+                        #center.append((float)(xyxy[0]+xyxy[2])/2.0) 
+                        #center.append(((float)(xyxy[1]+xyxy[3])/2.0))
 
                         # print(f'x1:{xyxy[0]} y1:{xyxy[1]}  |  x2:{xyxy[2]} y2:{xyxy[3]}')
 
-                        # center[0] == x_2d
-                        # center[1] == y_2d
-
                         # 2d 의 좌표 출력
+                        # 이 때 좌표계는 좌상단을 원점으로 하고 x는 우방향으로, y는 아래방향으로 커진다.
+                        # 현재 center 의 값은 무조건 양수를 가진다.
                         # print("center_x = ", (float)(center[0]) , " center_y = ", (float)(center[1]))
                         
                         # 2D -> 3D 변환 데이터 출력
@@ -228,12 +246,13 @@ def run(
                         # 파라미터: x좌표(px), y좌표(py), 실제크키, px크기
                         x_3d, y_3d = temp.worldPoint(center[0], center[1], 45, pxSize)
                         
-                        x_3dm, y_3dm = x_3d / 100 , y_3d / 100
+                        x_3dm, y_3dm = x_3d / 100.0 , y_3d / 100.0
 
                         # (0,0) (0,-737))
                         
                         # 3d 의 좌표 출력
                         # print("px_x = ", center[0], "px_y = ", center[1])
+
                         # 실제 정보
                         print("get_x(m) = ", x_3dm, "get_y(m) = ", y_3dm)
 
