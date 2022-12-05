@@ -107,7 +107,7 @@ class Calibration:
                 dst = cv2.undistort(frame, self.mtx, self.dist, None, self.opt_mtx)
                 x, y, w, h = self.roi
                 dst = dst[y : y + h, x : x + w]
-                cv2.imshow("VideoFrame", frame)
+                cv2.imshow("VideoFrame", dst)
                 # time.sleep(1)
             capture.release()
             cv2.destroyAllWindows()
