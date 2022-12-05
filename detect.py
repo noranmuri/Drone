@@ -32,6 +32,7 @@ import platform
 import sys
 from pathlib import Path
 import torch
+
 import pickle
 import cameraMatrix as cm
 
@@ -192,7 +193,7 @@ def run(
                         #label = None if hide_labels else (names[c] if hide_conf else f'{names[c]} {conf:.2f}')
                         label = None if hide_labels else (names[c] if hide_conf else f'{names[c]}')
 
-                        # 외각에 존재할 수 있는 liar 제가
+                        # 외각에 존재할 수 있는 liar 제거
                         if(xyxy[0] < 0.1*frame_w or xyxy[2] > 0.9*frame_w):
                             continue
                         if(xyxy[1] < 0.1*frame_h or xyxy[3] > 0.9*frame_h):
@@ -204,10 +205,7 @@ def run(
 
                         # 객체의 중심점 추출 ( 혹은 LED 의 중심 <- 현재 주석 처리 )
                         center = annotator.circle(xyxy, im0)
-                        # 만약 픽셀 좌표계 원점이 좌하단이면
-                        change_y = -center[1] + frame_h
-                        center[1] = change_y
-                        
+
                         # 객체의 중심점으로만 할 경우 아래의 3줄 코드 사용
                         #center=[]
                         #center.append((float)(xyxy[0]+xyxy[2])/2.0) 
@@ -229,7 +227,7 @@ def run(
                                     (754, 316),  #좌 상단
                                     (999, 313),  #우 상단
                         ], dtype = "double")
-                        
+
                         # 3D 월드 좌표 : 나중에 바꿔야 하는 부분
                         points_3D = np.array([
                                     (-5, -4, 50),       #좌 하단
