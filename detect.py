@@ -48,7 +48,7 @@ from utils.general import (LOGGER, Profile, check_file, check_img_size, check_im
 from utils.plots import Annotator, colors, save_one_box
 from utils.torch_utils import select_device, smart_inference_mode
 import numpy as np
-#from mavlink import send_land_message
+# from mavlink import send_land_message
 
 @smart_inference_mode()
 def run(
@@ -152,6 +152,7 @@ def run(
             if webcam:  # batch_size >= 1
                 p, im0, frame = path[i], im0s[i].copy(), dataset.count
                 dst = cv2.undistort(im0, caliCam.mtx, caliCam.dist, None, caliCam.opt_mtx)
+                im0 = dst
                 #_, im1 = sub.read()
                 #s += f'{i}: '
             else:
@@ -182,35 +183,39 @@ def run(
                         label = None if hide_labels else (names[c] if hide_conf else f'{names[c]}')
                         if(label=="drone"):
                             annotator.box_label(xyxy, label, color=colors(c, True))
-                            #print(xyxy[0], xyxy[1], xyxy[2], xyxy[3])
+                            # print(xyxy[0], xyxy[1], xyxy[2], xyxy[3])
 
-                        center = []
-                        #center = annotator.circle(xyxy, im0)
-                        center.append((float)(xyxy[0]+xyxy[2])/2.0)
-                        center.append((float)(xyxy[1]+xyxy[3])/2.0)
+                        # center = annotator.box_label(xyxy, label, color = colors(c,True))
+                            center=[]
+                            center.append((float)(xyxy[0]+xyxy[2])/2.0) 
+                            center.append(((float)(xyxy[1]+xyxy[3])/2.0))
+
+                        # print(f'x1:{xyxy[0]} y1:{xyxy[1]}  |  x2:{xyxy[2]} y2:{xyxy[3]}')
 
                         # center[0] == x_2d
                         # center[1] == y_2d
 
                         # 2d 의 좌표 출력
-                        #print("center_x = ", (float)(center[0]) , " center_y = ", (float)(center[1]))
+                        # print("center_x = ", (float)(center[0]) , " center_y = ", (float)(center[1]))
                         
                         # 2D -> 3D 변환 데이터 출력
                         temp = cm.find3dPoint(caliCam.opt_mtx, caliCam.dist)
 
                         points_2D = np.array([
-                                    (1169, 2093),
-                                    (2638, 2071),
-                                    (1184, 648),
-                                    (2612, 635)
+                                    (750, 568),  #좌 하단 
+                                    (1004, 565),  #우 하단
+                                    (754, 316),  #좌 상단
+                                    (999, 313),  #우 상단
                         ], dtype = "double")
+
+                        
 
                         # 3D 월드 좌표 : 나중에 바꿔야 하는 부분
                         points_3D = np.array([
-                                    (-2.5, -2.5, 11),
-                                    (2.5, 2.5, 11),
-                                    (-2.5, 2.5, 11),
-                                    (2.5, -2.5, 11)
+                                    (-5, -4, 50),       #좌 하단
+                                    (5, -4, 50),        #우 하단
+                                    (-5, 6, 50),        #좌 상단
+                                    (5, 6, 50)          #우 상단
                         ], dtype = "double")
 
                         temp.findRdata(points_2D, points_3D)
@@ -221,10 +226,20 @@ def run(
                         pxSize = (w + h) / 2.0
 
                         # 파라미터: x좌표(px), y좌표(py), 실제크키, px크기
-                        x_3d, y_3d = temp.worldPoint(center[0], center[1], 5, pxSize)
+                        x_3d, y_3d = temp.worldPoint(center[0], center[1], 45, pxSize)
+                        
+                        x_3dm, y_3dm = x_3d / 100 , y_3d / 100
+
+                        # (0,0) (0,-737))
                         
                         # 3d 의 좌표 출력
-                        print("center_x = ", x_3d, "center_y = ", y_3d)
+                        # print("px_x = ", center[0], "px_y = ", center[1])
+                        # 실제 정보
+                        print("get_x(m) = ", x_3dm, "get_y(m) = ", y_3dm)
+
+                        if ( abs(x_3dm) <= 0.1 and abs(y_3dm) <= 0.1):
+                            print("NOW KEEP LADING....")
+                            exit()
 
                         # 데이터 전송
                         #goto_position_target_local_ned(x_3d, y_3d)
